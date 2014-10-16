@@ -1,0 +1,49 @@
+.leaflet-bar a.leaflet-control-fullscreen-button {
+  background-position: 0 0;
+}
+.leaflet-fullscreen-on .leaflet-control-fullscreen a {
+  background-position:0 -27px;
+}
+.leaflet-popup-content .photo-connect {
+  float: right;
+}
+.loadspinner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 999;
+    width: 30px;
+    height: 30px;
+    background-image: url('images/spinner-sprite.png');
+    display: none;
+}
+ul.leaflet-icon-key {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  list-style-type: none;
+}
+ul.leaflet-icon-key:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+ul.leaflet-icon-key li {
+  list-style-image: none;
+  list-style-type: none;
+  margin-left: 0;
+  white-space: nowrap;
+  display: inline;
+  float: left;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+ul.leaflet-icon-key li:first-child, ul.leaflet-icon-key li.first {
+  padding-left: 0;
+}
+ul.leaflet-icon-key li:last-child {
+  padding-right: 0;
+}
+ul.leaflet-icon-key li.last {
+  padding-right: 0;
+}

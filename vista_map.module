@@ -1,0 +1,397 @@
+<?php
+/**
+ * @file
+ * Code for the Map feature.
+ */
+
+include_once 'vista_map.features.inc';
+
+// Default theme implementations.
+require_once drupal_get_path('module', 'vista_map') . '/theme/vista_map.theme.inc';
+
+/**
+ * Implements hook_form_FORM_ID_alter for field UI forms.
+ */
+function vista_map_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id) {
+  // Add a granularity setting to geofield geocoder options.
+  if ($form['#field']['type'] == 'geofield') {
+    $widget_settings = $form['#instance']['widget']['settings'];
+    $granularity_options = array(
+      'exact' => t('Exact'),
+      'postal' => t('Postal code'),
+    );
+    $form['instance']['widget']['settings']['geocoder_granularity'] = array(
+      '#type' => 'select',
+      '#title' => t('Geocoder granularity'),
+      '#default_value' => isset($widget_settings['geocoder_granularity']) ? $widget_settings['geocoder_granularity'] : '',
+      '#options' => $granularity_options,
+      '#description' => t('Select the level of accuracy for geocoding.'),
+      '#required' => TRUE,
+      '#weight' => 0,
+    );
+
+    // Make the granularity setting flow in a UX-sensible place within the form.
+    $form['instance']['widget']['settings']['geocoder_field']['#weight'] = -1;
+  }
+}
+
+/**
+ * Implements hook_geocoder_geocode_values_alter.
+ *
+ * @param array $src_field_vals
+ *   Address field sub-feild values, i.e. address components.
+ * @param array $field_info
+ *   Standard field instance info.
+ * @param array $handler_settings
+ *   Geocoder handling settings for the field instance.
+ * @param array $field_instance
+ *   Field instance settings.
+ */
+function vista_map_geocoder_geocode_values_alter(&$src_field_vals, $field_info, $handler_settings, $field_instance) {
+
+  // If we only want postal-code granularity, unset the more-specific values.
+  if (isset($field_instance['widget']['settings']['geocoder_granularity'])) {
+    if ($field_instance['widget']['settings']['geocoder_granularity'] === 'postal') {
+      $postal_code_only_fields = array(
+        'dependent_locality',
+        'locality',
+        'sub_administrative_area',
+        'administrative_area',
+        'postal_code',
+        'country'
+      );
+      foreach ($src_field_vals as $idx => $address) {
+        foreach ($address as $key => $value) {
+          if (!in_array($key, $postal_code_only_fields)) {
+            unset($src_field_vals[$idx][$key]);
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_views_geojson_render_fields_alter().
+ *
+ * Geocluster doesn't discern between a cluster of nearby points and a
+ * cluster of exact points (monolithic cluster). Here we are adding a flag
+ * that can be used by the frontend to apply appropriate behavior to a
+ * monolithic cluster.
+ *
+ * @param (array) $feature
+ *   A leaflet map feature, contains the geometry and properties.
+ * @param (Object) $view
+ *   The view producing the feature.
+ * @param (Object) $row
+ *   The row data from the view that produced the feature.
+ * @param (int) $index
+ *   The cardinality of the feature, i.e. 1,2,3, etc.
+ */
+function vista_map_views_geojson_render_fields_alter(&$feature, &$view, &$row, &$index) {
+
+  // Get user ids the cluster.
+  // The uid is the GROUP_CONCAT field set up in the view.
+  $cluster_uids = explode(",", $row->uid);
+
+  // Only check for monolithis if there is more than one point in the feature.
+  if (count($cluster_uids) > 1) {
+    // Compute table and field names sourcing the feature.
+    $geofield_table_name = NULL;
+    $geofield_field_name = NULL;
+    foreach ($view->display as $display_name => $display) {
+      if ($view->current_display == $display_name) {
+        foreach ($display->display_options['fields'] as $field) {
+          $field_info = field_info_field($field['field']);
+          if ($field_info['type'] === 'geofield') {
+            $geofield_table_name[$display_name] = $field['table'];
+            $geofield_field_name[$display_name] = $field['field'];
+            break;
+          }
+        }
+      }
+    }
+
+    if (isset($geofield_table_name[$view->current_display]) && isset($geofield_field_name[$view->current_display])) {
+      // Set up a query to pull lat/lon data data from all entities
+      // in the cluster. We didn't load entities or use field API
+      // because we care about performance.
+      $entity_ids = explode(",", $row->geocluster_ids);
+      $geopoint_field_name = array(
+        'lat' => $geofield_field_name[$view->current_display] . '_lat',
+        'lon' => $geofield_field_name[$view->current_display] . '_lon',
+      );
+      $query = db_select($geofield_table_name[$view->current_display], 'gf')
+        ->fields('gf', array(
+          $geopoint_field_name['lat'],
+          $geopoint_field_name['lon'],
+        ))
+        ->condition('entity_id', $entity_ids, 'IN');
+
+      // Figure out of the feature is monolithic or not.
+      // The idea here is that we set a reference lat/lon then iterate the
+      // results look for the first mismatch in lat or lon. Once we find
+      // a mismatch, the cluster is non-monolithic. Monolithic clusters are
+      // somewhat rare, so in most cases, we should break out of the loop
+      // pretty quickly. We do know that some of the largest monolithic clusters
+      // number in less than 100, so even in the worst case, the performance
+      // hit *should be* manageable.
+      $result = $query->execute();
+      $ref_point = $result->fetchAssoc();
+      $is_monolithic = TRUE;
+      while ($is_monolithic && ($point = $result->fetchAssoc())) {
+        if ($point[$geopoint_field_name['lat']] != $ref_point[$geopoint_field_name['lat']]) {
+          $is_monolithic = FALSE;
+        }
+        elseif ($point[$geopoint_field_name['lon']] != $ref_point[$geopoint_field_name['lon']]) {
+          $is_monolithic = FALSE;
+        }
+      }
+
+      // Add the flag and source display name for ajax rendering.
+      $feature['properties']['is_monolithic'] = $is_monolithic;
+      $feature['properties']['display_name'] = $view->current_display;
+    }
+  }
+  // Otherwise, this is a single-point feature. Just supply some
+  // info so the ajax loader knows what kind of popup to build.
+  else {
+    // Is this too slow?
+    $the_user = user_load($row->uid);
+    $feature['properties']['is_alumni']
+      = _vista_map_user_is_alumni($the_user);
+    $feature['properties']['is_active']
+      = _vista_map_user_is_active($the_user);
+
+    // Add the group of the user to the feature.
+    if (isset($the_user->og_user_node)) {
+      foreach ($the_user->og_user_node[LANGUAGE_NONE] as $group) {
+        $feature['properties']['group_id'][] = $group['target_id'];
+      }
+    }
+
+    // Also add the "other groups" id.
+    if (isset($the_user->og_user_node1)) {
+      foreach ($the_user->og_user_node1[LANGUAGE_NONE] as $group) {
+        $feature['properties']['group_id'][] = $group['target_id'];
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_leaflet_map_info_alter.
+ *
+ * We're adding the fullscreen control, so add it to the settings
+ * here regardless of what module (leaflet, leaflet_more_maps, etc)
+ * provides the default settings.
+ */
+function vista_map_leaflet_map_info_alter(&$map_info) {
+  foreach ($map_info as $map_key => $spec) {
+    $map_info[$map_key]['settings']['fullscreenControl'] = TRUE;
+  }
+}
+
+
+/**
+ * Implements hook_leaflet_map_prebuild_alter.
+ */
+function vista_map_leaflet_map_prebuild_alter(&$settings) {
+
+  // Add the fullscreen button needs from the libarary.
+  $fs_lib_path = libraries_get_path('leaflet.fullscreen');
+  drupal_add_js($fs_lib_path . '/dist/Leaflet.fullscreen.js');
+  drupal_add_css($fs_lib_path . '/dist/leaflet.fullscreen.css');
+
+  // Add sprite animation library.
+  $animate_lib_path = libraries_get_path('animate_sprite');
+  drupal_add_js($animate_lib_path . '/scripts/jquery.animateSprite.js');
+
+  // Add the awesome markers library.
+  $marker_lib = libraries_get_path('awesome_markers');
+  drupal_add_js($marker_lib . '/dist/leaflet.awesome-markers.js');
+  drupal_add_css($marker_lib . '/dist/leaflet.awesome-markers.css');
+
+  // Add our customized geocluster behaviors.
+  drupal_add_js(
+    drupal_get_path('module', 'vista_map') . '/vista_map.js', array(
+      // Add overrides after geocluster.leaflet.bbox.js.
+      'weight' => 110,
+    )
+  );
+
+  // Add micro css file to fix interference with layer control (not stylistic).
+  drupal_add_css(
+    drupal_get_path('module', 'vista_map') . '/vista_map.css'
+  );
+}
+
+/**
+ * Detect whether or not a user is a member of the alumni group.
+ *
+ * @param object $user
+ *   The user account object for the user in question.
+ *
+ * @return bool
+ *   Whether or not the user is an alum.
+ */
+function _vista_map_user_is_alumni($user) {
+  // Since the gid is set on site install, we are identifying groups by nid
+  // only. This obviously would break if a group were deleted and recreated.
+  $alumni_gid = 19;
+  $user_groups = og_get_groups_by_user($user);
+
+  // Freshly-migrated users may not yet be a member of a group yet,
+  // so only check for memberships when one or more are present.
+  if (isset($user_groups['node'])) {
+    $is_alumni = array_key_exists($alumni_gid, $user_groups['node']);
+  }
+  else {
+    $is_alumni = FALSE;
+  }
+  return $is_alumni;
+}
+
+/**
+ * Detect whether or not a user is a member of an active group.
+ *
+ * @param object $user
+ *   The account object for the user in question.
+ *
+ * @return bool
+ *   Whether or not the user is in one of the active groups.
+ */
+function _vista_map_user_is_active($user) {
+  $active_gids = array(
+    'vista' => 15,
+    'vista_leader' => 16,
+    'supervisor' => 17,
+    'state_offices' => 18,
+  );
+  $user_groups = og_get_groups_by_user($user);
+
+  $is_active = FALSE;
+
+  // Freshly-migrated users may not yet have a group,
+  // so only look for membership when one or more are present.
+  if (isset($user_groups['node'])) {
+    foreach ($active_gids as $gid) {
+      if ($is_active = array_key_exists($gid, $user_groups['node'])) {
+        $is_active = TRUE;
+        // We don't care which active group.
+        break;
+      }
+    }
+  }
+
+  return $is_active;
+}
+
+/**
+ * Implements hook_leaflet_geojson_map_pane_alter().
+ *
+ * Here we are altering the center and zoom point for the map based
+ * on user data. The user and associated profile has a personal
+ * address geocoded to zip-code granularity, and a program/site address
+ * geocoded to exact granularity. We choose an address and alter the point
+ * based on the following rules:
+ *
+ * 1. If the user is an alum, center and zoom on their personal zip code,
+ *    regardless of any other group memberships.
+ * 2. If the user is active vista, leader, supervisor, or state office,
+ *    center and zoom on program address.
+ * 3. If the user doesn't belong to any of these groups (or is anonymous)
+ *    do nothing and leave the default center and zoom.
+ *
+ * @param array $map_base_info
+ *   Array of information about the map base.
+ * @param array $feature_layers
+ *   Array of feature (data) layers
+ */
+function vista_map_leaflet_geojson_map_pane_alter(&$map_base_info, &$feature_layers) {
+
+  if (!user_is_anonymous()) {
+    global $user;
+
+    // Detect alumni/active group memberships.
+    $is_alumni = _vista_map_user_is_alumni($user);
+    $is_active = _vista_map_user_is_active($user);
+
+    // Get the current user's profile.
+    $user_profile = profile2_load_by_user($user, 'main');
+
+    // Compute the new center and zoom based off the profile data.
+    $new_center = array();
+    $new_zoom = NULL;
+    if (!empty($user_profile)) {
+      if ($is_alumni) {
+        // An alumni member will recenter on their profile location.
+        $geofield_items = field_get_items('profile2', $user_profile, 'field_profile_location');
+        if ($geofield_items) {
+          $new_center['lat'] = $geofield_items[0]['lat'];
+          $new_center['lon'] = $geofield_items[0]['lon'];
+          $new_zoom = 8;
+        }
+      }
+      elseif ($is_active) {
+        // An active group member will recenter on program location.
+        $site_info_items = field_get_items('profile2', $user_profile, 'field_site_information');
+        if ($site_info_items) {
+          // The geofield is inside a field collection.
+          $fc_entity_id = $site_info_items[0]['value'];
+          $site_info = field_collection_item_load($fc_entity_id);
+          $geofield_items = field_get_items('field_collection_item', $site_info, 'field_organization_location');
+          if ($geofield_items) {
+            $new_center['lat'] = $geofield_items[0]['lat'];
+            $new_center['lon'] = $geofield_items[0]['lon'];
+            $new_zoom = 10;
+          }
+        }
+      }
+    }
+
+    // Adjust center if it's complete.
+    if (isset($new_center['lat']) && isset($new_center['lon'])) {
+      $map_base_info['center']['lat'] = $new_center['lat'];
+      $map_base_info['center']['lon'] = $new_center['lon'];
+    }
+
+    // Adjust zoom if it was changed.
+    if ($new_zoom) {
+      $map_base_info['settings']['zoom'] = $new_zoom;
+    }
+  }
+}
+
+/**
+ * Implements hook_block_info.
+ */
+function vista_map_block_info() {
+  $blocks = array();
+
+  // Map icon key as a block.
+  $blocks['vista_map_icon_key'] = array(
+    'info' => t('Vista map icon key'),
+    'cache' => DRUPAL_CACHE_PER_ROLE,
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view.
+ */
+function vista_map_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'vista_map_icon_key':
+      $block['content'] = theme('vista_map_icon_key', array('key_data' => NULL));
+      break;
+
+    default:
+      break;
+  }
+
+  return $block;
+}
