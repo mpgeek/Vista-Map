@@ -9,14 +9,15 @@
 \documentclass{beamer}
 
 \usetheme{Warsaw}
-\usepackage{xcolor}
+\usepackage{color}
 \usepackage{graphicx}
+
 \definecolor{p2orange}{RGB}{253,121,0}
 \definecolor{p2dark}{RGB}{40,47,54}
 \setbeamercolor{palette primary}{use=structure,fg=white,bg=p2orange}
 \setbeamercolor{palette quaternary}{use=structure,fg=white,bg=p2dark}
 \setbeamercolor{normal text}{use=structure,fg=p2dark}
-%\setbeamercolor{item}{fg=p2orange}
+\setbeamercolor{item}{fg=p2orange}
 
 \begin{document}
 
@@ -33,14 +34,295 @@
 
 \section{Background} 
 
-\frame{\frametitle{Here we go!}
-  Hey moma we all cray now
+\frame{\frametitle{Mapping: What Is Going On Here?}
+  \centerline{\includegraphics[scale=0.4]{assets/data-driven-journalism.jpg}}
 }
 
-\section{Examples}
-\frame{\frametitle{Examples for Reference}} {
- YoYo
+\frame{\frametitle{The Process}
+  Data Driven Presentation as a \alert{Process}
+  \vspace{1em}
+  \begin{itemize}
+	\item Data must be found
+	\item Data must be interrogated
+	\item Data must be visualized
+	\item Data can then \alert{tell the story}
+  \end{itemize}
+  \pause
+  \vspace{1em}
+  This allows content authors to \alert{present data in context} in ways that would be \textcolor{p2orange}{difficult with words alone}.
 }
-\input{examples.tex}
+
+\frame{\frametitle{Mapping: Why is This Important?}
+  \centerline{The \alert{human} aspect. Usability matters.}
+  \centerline{\includegraphics[scale=0.2]{assets/data-driven-journalism--example.png}}
+}
+
+\frame{\frametitle{The Problem: Dense-Point Data}
+  \centerline{First pass: we have \alert{point crowding}.}
+  \centerline{\includegraphics[scale=0.4]{assets/google-example_no-cluster.png}}
+  \centerline{Really \alert{not usable}.}
+}
+
+\frame{\frametitle{One Solution: Client-Side Clustering}
+  \centerline{First step: lets cluster on the \alert{client side}.}
+  \centerline{\includegraphics[scale=0.4]{assets/google-example_clustered.png}}
+  \centerline{More usable, we gain context and can zoom in on areas of interest.}
+}
+
+\frame{\frametitle{Solution Breakdown: Clustering Thousands of Points}
+  \centerline{What if we have \alert{thousands} of points?}
+  \centerline{\includegraphics[scale=0.25]{assets/thousands-unclustered.png}}
+  \centerline{Client-side clustering \alert{breaks down} upwards of a few hundred points.}
+}
+
+\frame{\frametitle{Roadblock: Client-Side Clustering at Large Scale}
+  Why Does it Break?
+  \begin{enumerate}
+    \item Views (\textcolor{p2orange}{PHP}) renders each data point as a row of output, one at a time (thousands).
+    \item Views (\textcolor{p2orange}{PHP}) renders the popup info (hidden) at page-load time.
+    \item The mapping library (\textcolor{blue}{JS}) must parse the data.
+    \item The mapping library (\textcolor{blue}{JS}) clusters the points.
+    \item The mapping library (\textcolor{blue}{JS}) renders the map.
+  \end{enumerate}
+  \pause
+  \vspace{1em}
+  Both \textcolor{p2orange}{PHP} and \textcolor{blue}{JS} are asked to do too much at once.
+  \begin{itemize}
+    \item The \alert{breaking point} is about 300 data points (empirical).
+  \end{itemize}
+}
+
+\frame{\frametitle{Client-Side Clustering Visualized}
+  \centerline{\includegraphics[scale=0.3]{assets/client-side-clustering.png}}
+}
+
+\frame{\frametitle{Demo}
+  \centerline{\href{http://vistacampus.gov/map}{http://vistacampus.gov/map}}
+  \centerline{\includegraphics[scale=0.3]{assets/vista-map--static.png}}
+}
+
+\frame{\frametitle{Demo: Things of Note}
+  \begin{itemize}
+    \item Bounded mapping
+    \item Load time under 1sec
+    \item Clusters are single things, not collections of things
+    \item On-demand, ajax-delivered infobubbles
+    \item About 5K points 
+    \item 
+  \end{itemize}
+}
+
+\frame{\frametitle{Starter Build}
+  If you really want to build this...
+  \begin{enumerate}
+  	\item Clone the starter build
+	\item Modify to suit
+  \end{enumerate}
+  \vspace{1em}
+  \pause
+  Starter Build:\\
+  \href{http://cgit.drupalcode.org/geocluster/tree/modules/geocluster\_demo}{http://cgit.drupalcode.org/geocluster/tree/modules/geocluster\_demo}
+  \begin{itemize}
+    \item Instructions: \href{https://www.drupal.org/node/1962198}{https://www.drupal.org/node/1962198}
+  \end{itemize}
+  \vspace{1em}
+  \pause
+  Why?
+  \begin{itemize}
+    \item The configuration is tedious and complex.
+    \item Way too easy to break to start from scratch.
+  \end{itemize}
+}
+
+\section{The Geocluster-Leaflet Stack}
+
+\frame{\frametitle{The Recipe}
+  Basic Recipe
+  \begin{itemize}
+    \item Address Field (location storage)
+    \item Geocoder (geocoding addresses, requires GeoPHP)
+    \item Geofield (geocode storage)
+    \item \textbf{Geocluster} (server-side clustering)
+    \item Views
+    \item Views GeoJSON (GeoJSON feeds)
+    \item Leaflet GeoJSON (2.x for Panels support, 1.x for Bean)
+    \item Leaflet Integration (requires Leaflet core library)
+  \end{itemize}
+  \vspace{1em}
+  \pause
+  But... we need lots of \alert{patches}.
+}
+
+\frame{\frametitle{A Working Model}
+  The client build has been released as GPL2.0
+  \begin{itemize}
+    \item \href{https://github.com/mpgeek/Vista-Map}{https://github.com/mpgeek/Vista\-Map}
+  \end{itemize}
+  \vspace{1em}
+  Patch mania! How about a \textcolor{p2orange}{makefile}?
+  \begin{itemize}
+    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.make}{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.make}
+  \end{itemize}
+}
+
+\frame{\frametitle{Client-Side Clustering Visualized (Redux)}
+  \centerline{\includegraphics[scale=0.3]{assets/client-side-clustering.png}}
+}
+
+\frame{\frametitle{Server-Side Clustering with Geocluster Visualized}
+  \centerline{\includegraphics[scale=0.3]{assets/server-side-clustering--geocluster.png}}
+}
+
+\frame{\frametitle{Key Architectural Feature}
+  \textbf{Geocluster Keys}
+  \begin{itemize}
+    \item Clustering is performed at the \alert{query level} by Geocluster
+    \item \textcolor{p2orange}{PHP} and \textcolor{blue}{JS} only see the clusters as single (Views) rows.
+    \item This feature alone is almost \alert{entirely responsible} for the performance gain.
+  \end{itemize}
+  \pause
+  \vspace{1em}
+  But How?
+  \pause
+  \begin{itemize}
+    \item By \textcolor{p2orange}{geohashing}!
+  \end{itemize}
+}
+
+\frame{\frametitle{Geocluster \& Geohash}
+  \textbf{In a nutshell:}
+  \begin{itemize}
+    \item Geocluster adds a hierarchical, spatial index to geofields based on the Geohash algorithm.
+    \item Each geofield has columns for varying levels of precision (geohash index) created/updated on \textcolor{gray}{\texttt{entity\_save}}.
+    \item A query for points/clusters specifies a geohash index and asks for clusters based on that index.
+  \end{itemize}
+  \pause
+  \vspace{1em}
+  \textbf{Notice:}
+  \begin{itemize}
+    \item The clustering information is created when the content is \alert{created}.
+    \item A request for points and clusters \alert{doesn't actually cluster}. Rather it's a \alert{simple query} of a spatial index. 
+  \end{itemize}
+}
+
+%%\frame{\frametitle{Geohashing}
+%%  \centerline{\includegraphics[scale=0.3]{assets/server-side-clustering--geocluster.png}}
+%%}
+
+%%\frame{\frametitle{Geohashed Space}
+%%  \centerline{\includegraphics[scale=0.3]{assets/geohash-diagram.jpg}}
+%%}
+
+%%\frame{\frametitle{Points in Geohashed Space}
+%%  \centerline{\includegraphics[scale=0.3]{assets/geohash-diagram--with-points.png}}
+%%}
+
+\section{Applied Customization}
+
+\frame{\frametitle{Near-point Clusters vs. Exact-point Clusters}
+  \textbf{Monolithic Clusters}
+  \vspace{2em}
+  \begin{itemize}
+    \item Leaflet doesn't discern between points that are \textcolor{p2orange}{near to one another} versus multiple points at the \alert{same location}.
+    \vspace{1.5em}
+    \item We needed to create two cluster types, on for each condition.
+    \vspace{1.5em}
+    \pause
+    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L115}{\texttt{vista\_map.module}, lines 115-155}
+  \end{itemize}
+}
+
+\frame{\frametitle{On-Demand Popups}
+  \textbf{AJAX!}
+  \vspace{1.5em}
+  \begin{itemize}
+    \item We don't load the popup info into the DOM at map-load time (performance tactic).
+    \vspace{1em}
+    \item We needed to load them on demand and allow them to be cached.
+    \vspace{1em}
+    \pause
+    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.js\#L123}{\texttt{vista\_map.js}, lines 324-404}
+  \end{itemize}
+}
+
+\frame{\frametitle{Current-user Zoom}
+  \textbf{Focus the Map on the Current-user's Location}
+  \vspace{1.5em}
+  \begin{itemize}
+    \item One of the purposes of the map was to emphasize making local connections.
+    \vspace{1em}
+    \item We wanted to zoom in on the currently logged-in user.
+    \vspace{1em}
+    \pause
+    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L290}{\texttt{vista\_map.module}, lines 290-351}
+  \end{itemize}
+}
+
+\frame{\frametitle{Limit Geocoder Granularity}
+  \textbf{Geocode to Center of ZIP-code Only}
+  \vspace{1.5em}
+  \begin{itemize}
+    \item One of two data layers needed to geocode only to ZIP-code precision.
+    \vspace{1em}
+    \item Removing more-specific information and passing abbreviated info only to geocoder.
+    \vspace{1em}
+    \pause
+    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L12}{\texttt{vista\_map.module}, lines 12-72}
+  \end{itemize}
+}
+
+\frame{\frametitle{Multiple Data Layers}
+  \textbf{Implement Data Layering and Panels Support}
+  \vspace{1.5em}
+  \begin{itemize}
+    \item OG membership drove layer membership, and source geofield.
+   \vspace{1em}
+    \item Views necessitated that different source geofields be separate data layers.
+    \vspace{1em}
+    \pause
+    \item Contiributed the 2.x branch of Leaflet GeoJSON for panels support with multiple data layers (\href{https://www.drupal.org/node/2225815}{https://www.drupal.org/node/2225815})
+  \end{itemize}
+}
+
+%%
+%% Awesome markers?
+%%
+
+\frame{\frametitle{Scalability}
+  \centerline{\includegraphics[scale=0.5]{assets/geocluster-performance.png}}
+}
+
+%%\section{Possible Improvements}
+
+%%\frame{\frametitle{Ya}
+%%  Yo
+%%}
+
+%%
+%%
+%%
+
+\frame{\frametitle{References \& Resources}
+  \textbf{Things we saw and more resources:}
+  \vspace{1em}
+  \begin{itemize}
+  	\item Feature-ized map application: \href{https://github.com/mpgeek/Vista-Map}{https://github.com/mpgeek/Vista-Map}
+    \vspace{1em}
+    \item Geohash Algorithm:\\ \href{http://en.wikipedia.org/wiki/Geohash}{http://en.wikipedia.org/wiki/Geohash}
+    \vspace{1em}
+    \item Geocluster Master's Thesis (by @dasjo): \href{http://dasjo.at/thesis}{http://dasjo.at/thesis}
+  \end{itemize}
+}
+
+%%Then, you'll need a custom module. \pause In contrast to OpenLayers, the power of Leaflet lies in the API.
+%%  \begin{itemize}
+%%    \item Implement custom data filtering in \textcolor{p2orange}{PHP}
+%%    \item Implement custom behaviors in \textcolor{blue}{Javascript}
+%%  \end{itemize}
+
+%%
+%%
+%%
+%%\input{examples.tex}
 
 \end{document}
