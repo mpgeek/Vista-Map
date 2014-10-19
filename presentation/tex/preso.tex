@@ -11,6 +11,7 @@
 \usetheme{Warsaw}
 \usepackage{color}
 \usepackage{graphicx}
+\usepackage{textpos}
 
 \definecolor{p2orange}{RGB}{253,121,0}
 \definecolor{p2dark}{RGB}{40,47,54}
@@ -19,16 +20,19 @@
 \setbeamercolor{normal text}{use=structure,fg=p2dark}
 \setbeamercolor{item}{fg=p2orange}
 
+\logo{\includegraphics[scale=0.2]{assets/p2-logo-pinwheel.png}}
+
 \begin{document}
 
 % meta
 \title[Large-Scale Mapping in Drupal with Geocluster \& Leaflet]{Scalable, Server-side Mapping in Drupal with the Geocluster-Leaflet Stack}  
-\author{Eric Paul (@mpgeek)}
-\titlegraphic{\includegraphics[scale=0.25]{assets/p2-logo_small.jpg}}
-
+\author[@mpgeek]{Eric Paul (@mpgeek)\\ \vspace{0.5em}\includegraphics[scale=0.25]{assets/p2-logo_small.jpg}}
+\institute {Phase2 Technology}
 \date{\today} 
 
-\frame{\titlepage} 
+\begin{frame} 
+  \maketitle
+\end{frame}
 
 \frame{\frametitle{Table of contents}\tableofcontents} 
 
@@ -53,8 +57,7 @@
 }
 
 \frame{\frametitle{Mapping: Why is This Important?}
-  \centerline{The \alert{human} aspect. Usability matters.}
-  \centerline{\includegraphics[scale=0.2]{assets/data-driven-journalism--example.png}}
+  \centerline{\includegraphics[scale=0.22]{assets/data-driven-journalism--example.png}}
 }
 
 \frame{\frametitle{The Problem: Dense-Point Data}
@@ -103,12 +106,13 @@
 
 \frame{\frametitle{Demo: Things of Note}
   \begin{itemize}
-    \item Bounded mapping
+    \item Bounded mapping (bbox strategy)
     \item Load time under 1sec
     \item Clusters are single things, not collections of things
     \item On-demand, ajax-delivered infobubbles
-    \item About 5K points 
-    \item 
+    \item Dynamic reclustering on pan/zoom
+    \item About 4K points 
+    \item Layer interference (boo!)
   \end{itemize}
 }
 
@@ -217,7 +221,7 @@
 %%  \centerline{\includegraphics[scale=0.3]{assets/geohash-diagram--with-points.png}}
 %%}
 
-\section{Applied Customization}
+\section{Customization Towards an Application}
 
 \frame{\frametitle{Near-point Clusters vs. Exact-point Clusters}
   \textbf{Monolithic Clusters}
@@ -284,29 +288,77 @@
   \end{itemize}
 }
 
-%%
-%% Awesome markers?
-%%
-
-\frame{\frametitle{Scalability}
-  \centerline{\includegraphics[scale=0.5]{assets/geocluster-performance.png}}
+\frame{\frametitle{Scalability Requirement}
+  \textbf{How big did we need to go?}
+  \vspace{0.5em}
+  \begin{itemize}
+    \item Mapping user profiles, about 18k users were migrated
+    \vspace{0.5em}
+    \item Originally, it was expected that all users would be map
+    \vspace{0.5em}
+    \item Application scale, then is $10\textsuperscript{4}$
+  \end{itemize}
+  \vspace{1em}
+  \pause
+  Geocluster's clustering backend is \alert{pluggable}
+  \vspace{1em}
+  \begin{itemize}
+  	\item PHP clustering (post-query clusternig)
+	\vspace{0.5em}
+	\item MySQL clustering (query-level clustering)
+	\vspace{0.5em}
+	\item Apache solr clustering (alternative query-level clustering)
+  \end{itemize}
 }
 
-%%\section{Possible Improvements}
+\frame{\frametitle{Scalability Metrics}
+  \centerline{\textcolor{p2orange}{Cold caches}}
+  \centerline{\includegraphics[scale=0.45]{assets/geocluster-performance.png}}
+  \centerline{We implemented \alert{MySQL} clustering}
+}
 
-%%\frame{\frametitle{Ya}
-%%  Yo
-%%}
+\frame{\frametitle{Possible Improvements}
+  \textbf{Geocluster}
+  \begin{itemize}
+    \item Progressively enhance with client side clustering below a certain point threshold. \href{https://www.drupal.org/node/1914704}{https://www.drupal.org/node/1914704}
+    \pause
+    \vspace{0.5em}
+    
+  \end{itemize}
+}
 
-%%
-%%
-%%
+\frame{\frametitle{Possible Improvements}
+  \textbf{Leaflet GeoJSON}
+  \begin{itemize}
+    \item Collapse clusters to a single layer to eliminate layer interference.
+    \vspace{0.5em}
+    \pause
+    \item Make data feeds cacheable by quantizing bounding box parameters.\\ \textcolor{gray}{\footnotesize{\texttt{/\$view\_url?bbox=\$left,\$right,\$top,\$bottom?zoom=\$zoom\_level}}}
+    \vspace{0.5em}
+    \begin{itemize}
+      \item The \texttt{\textcolor{gray}{bbox}} arguments are floating-point numbers that depend on viewport size and zoom. \alert{Takes a long time for caches to warm up for non-mobile viewports}.
+      \vspace{0.5em}
+      \item \href{https://www.drupal.org/node/1868982}{https://www.drupal.org/node/1868982}
+    \end{itemize}
+  \end{itemize}
+}
+
+\section{Takeaways}
+
+\frame{\frametitle{Take-out Knowledge}
+  \textbf{What we know}
+  \begin{itemize}
+    \item Using the Leaflet-Geocluster stack, and healthy dose of patches, it is possible to deploy a scalable map application suitable for production use.
+  \end{itemize}
+}
 
 \frame{\frametitle{References \& Resources}
   \textbf{Things we saw and more resources:}
   \vspace{1em}
   \begin{itemize}
-  	\item Feature-ized map application: \href{https://github.com/mpgeek/Vista-Map}{https://github.com/mpgeek/Vista-Map}
+  	\item Map application in production: \href{http://www.vistacampus.gov/map}{http://www.vistacampus.gov/map}
+	\vspace{1em}
+	\item Map application Drupal feature: \href{https://github.com/mpgeek/Vista-Map}{https://github.com/mpgeek/Vista-Map}
     \vspace{1em}
     \item Geohash Algorithm:\\ \href{http://en.wikipedia.org/wiki/Geohash}{http://en.wikipedia.org/wiki/Geohash}
     \vspace{1em}
