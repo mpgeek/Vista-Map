@@ -20,11 +20,12 @@
 \setbeamercolor{normal text}{use=structure,fg=p2dark}
 \setbeamercolor{item}{fg=p2orange}
 
+% For the lower-right corner logo.
 \logo{\includegraphics[scale=0.2]{assets/p2-logo-pinwheel.png}}
 
 \begin{document}
 
-% meta
+% Meta for title slide.
 \title[Large-Scale Mapping in Drupal with Geocluster \& Leaflet]{Scalable, Server-side Mapping in Drupal with the Geocluster-Leaflet Stack}  
 \author[@mpgeek]{Eric Paul (@mpgeek)\\ \vspace{0.5em}\includegraphics[scale=0.25]{assets/p2-logo_small.jpg}}
 \institute {Phase2 Technology}
@@ -43,17 +44,21 @@
 }
 
 \frame{\frametitle{The Process}
-  Data Driven Presentation as a \alert{Process}
-  \vspace{1em}
+  \textbf{Data Driven Journalism as a \alert{Process}}
+  \vspace{0.5em}
   \begin{itemize}
-	\item Data must be found
-	\item Data must be interrogated
-	\item Data must be visualized
+	\item Given a set of data
+	\item And a question to be asked
+	\item Find a useful visualization
 	\item Data can then \alert{tell the story}
   \end{itemize}
   \pause
   \vspace{1em}
   This allows content authors to \alert{present data in context} in ways that would be \textcolor{p2orange}{difficult with words alone}.
+  \vspace{0.5em}
+  \begin{itemize}
+    \item We can adopt this media-industry notion and generalize it to \alert{usability}.
+  \end{itemize}
 }
 
 \frame{\frametitle{Mapping: Why is This Important?}
@@ -79,7 +84,8 @@
 }
 
 \frame{\frametitle{Roadblock: Client-Side Clustering at Large Scale}
-  Why Does it Break?
+  \textbf{Why Does it Break?}
+  \vspace{0.5em}
   \begin{enumerate}
     \item Views (\textcolor{p2orange}{PHP}) renders each data point as a row of output, one at a time (thousands).
     \item Views (\textcolor{p2orange}{PHP}) renders the popup info (hidden) at page-load time.
@@ -117,21 +123,21 @@
 }
 
 \frame{\frametitle{Starter Build}
-  If you really want to build this...
+  \textbf{If you really want to build this...}
   \begin{enumerate}
   	\item Clone the starter build
 	\item Modify to suit
   \end{enumerate}
   \vspace{1em}
   \pause
-  Starter Build:\\
+  \textbf{Starter Build:}\\
   \href{http://cgit.drupalcode.org/geocluster/tree/modules/geocluster\_demo}{http://cgit.drupalcode.org/geocluster/tree/modules/geocluster\_demo}
   \begin{itemize}
     \item Instructions: \href{https://www.drupal.org/node/1962198}{https://www.drupal.org/node/1962198}
   \end{itemize}
   \vspace{1em}
   \pause
-  Why?
+  \textbf{Why?}
   \begin{itemize}
     \item The configuration is tedious and complex.
     \item Way too easy to break to start from scratch.
@@ -141,7 +147,7 @@
 \section{The Geocluster-Leaflet Stack}
 
 \frame{\frametitle{The Recipe}
-  Basic Recipe
+  \textbf{Basic Recipe}
   \begin{itemize}
     \item Address Field (location storage)
     \item Geocoder (geocoding addresses, requires GeoPHP)
@@ -209,18 +215,6 @@
   \end{itemize}
 }
 
-%%\frame{\frametitle{Geohashing}
-%%  \centerline{\includegraphics[scale=0.3]{assets/server-side-clustering--geocluster.png}}
-%%}
-
-%%\frame{\frametitle{Geohashed Space}
-%%  \centerline{\includegraphics[scale=0.3]{assets/geohash-diagram.jpg}}
-%%}
-
-%%\frame{\frametitle{Points in Geohashed Space}
-%%  \centerline{\includegraphics[scale=0.3]{assets/geohash-diagram--with-points.png}}
-%%}
-
 \section{Customization Towards an Application}
 
 \frame{\frametitle{Near-point Clusters vs. Exact-point Clusters}
@@ -232,7 +226,7 @@
     \item We needed to create two cluster types, on for each condition.
     \vspace{1.5em}
     \pause
-    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L115}{\texttt{vista\_map.module}, lines 115-155}
+    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L115}{\texttt{\textcolor{gray}{vista\_map.module}}, lines 115-155}
   \end{itemize}
 }
 
@@ -245,7 +239,7 @@
     \item We needed to load them on demand and allow them to be cached.
     \vspace{1em}
     \pause
-    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.js\#L123}{\texttt{vista\_map.js}, lines 324-404}
+    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.js\#L123}{\texttt{\textcolor{gray}{vista\_map.js}}, lines 324-404}
   \end{itemize}
 }
 
@@ -258,7 +252,7 @@
     \item We wanted to zoom in on the currently logged-in user.
     \vspace{1em}
     \pause
-    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L290}{\texttt{vista\_map.module}, lines 290-351}
+    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L290}{\texttt{\textcolor{gray}{vista\_map.module}}, lines 290-351}
   \end{itemize}
 }
 
@@ -271,7 +265,7 @@
     \item Removing more-specific information and passing abbreviated info only to geocoder.
     \vspace{1em}
     \pause
-    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L12}{\texttt{vista\_map.module}, lines 12-72}
+    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L12}{\texttt{\textcolor{gray}{vista\_map.module}}, lines 12-72}
   \end{itemize}
 }
 
@@ -347,14 +341,23 @@
 
 \frame{\frametitle{Take-out Knowledge}
   \textbf{What we know}
+  \vspace{1em}
   \begin{itemize}
-    \item Using the Leaflet-Geocluster stack, and healthy dose of patches, it is possible to deploy a scalable map application suitable for production use.
+    \item Large-scale mapping is now possible in Drupal.
+    \vspace{0.5em}
+    \item Geocluster needs work.
+    \vspace{0.5em}
+    \item Leaflet GeoJSON needs work.
+    \vspace{0.5em}
+    \item Despite that, production-quality map applications can now be built.
+    \vspace{0.5em}
+    \pause
+    \item \alert{You will need a debugger}.
   \end{itemize}
 }
 
 \frame{\frametitle{References \& Resources}
   \textbf{Things we saw and more resources:}
-  \vspace{1em}
   \begin{itemize}
   	\item Map application in production: \href{http://www.vistacampus.gov/map}{http://www.vistacampus.gov/map}
 	\vspace{1em}
@@ -366,15 +369,12 @@
   \end{itemize}
 }
 
-%%Then, you'll need a custom module. \pause In contrast to OpenLayers, the power of Leaflet lies in the API.
-%%  \begin{itemize}
-%%    \item Implement custom data filtering in \textcolor{p2orange}{PHP}
-%%    \item Implement custom behaviors in \textcolor{blue}{Javascript}
-%%  \end{itemize}
+\frame{\frametitle{Questions?}
+  \centerline{\includegraphics[scale=0.6]{assets/questions.jpg}}
+  \vspace{1em}
+  \centerline{Find me on twitter, IRC, or drupal.org: @mpgeek}
+}
 
-%%
-%%
-%%
 %%\input{examples.tex}
 
 \end{document}
