@@ -11,7 +11,7 @@ projects[geophp][version] = "1.7"
 
 ::
 ;; Geocoder
-:
+;;
 projects[geocoder][download][branch] = "7.x-1.x"
 projects[geocoder][download][revision] = "c1a79dc"
 ;; Patching for more useful geocode values alter hook.
