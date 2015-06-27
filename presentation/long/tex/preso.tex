@@ -29,7 +29,7 @@
 \title[Large-Scale Mapping in Drupal with Geocluster \& Leaflet]{Scalable, Server-side Mapping in Drupal with the Geocluster-Leaflet Stack}  
 \author[@mpgeek]{Eric Paul (@mpgeek)\\ \vspace{0.5em}\includegraphics[scale=0.25]{assets/p2-logo_small.jpg}}
 \institute {Phase2 Technology}
-\date{\today} 
+\date{Twin Cities Drupal Camp \\ \today} 
 
 \begin{frame} 
   \maketitle
@@ -111,36 +111,17 @@
 }
 
 \frame{\frametitle{Demo: Things of Note}
+Map has been in production for just over a year.
+\vspace{1em}
   \begin{itemize}
+    \item About 4K points at launch time (~2k now)
     \item Bounded mapping (bbox strategy)
     \item Load time under 1sec
     \item Clusters are single things, not collections of things
-    \item On-demand, ajax-delivered infobubbles
+    \item On-demand, AJAX-delivered infobubbles with \alert{complex data}
     \item Dynamic reclustering on pan/zoom
-    \item About 4K points 
     \item Layer interference (boo!)
-  \end{itemize}
-}
-
-\frame{\frametitle{Starter Build}
-  \textbf{If you really want to build this...}
-  \begin{enumerate}
-  	\item Clone the starter build
-	\item Modify to suit
-  \end{enumerate}
-  \vspace{1em}
-  \pause
-  \textbf{Starter Build:}\\
-  \href{http://cgit.drupalcode.org/geocluster/tree/modules/geocluster\_demo}{http://cgit.drupalcode.org/geocluster/tree/modules/geocluster\_demo}
-  \begin{itemize}
-    \item Instructions: \href{https://www.drupal.org/node/1962198}{https://www.drupal.org/node/1962198}
-  \end{itemize}
-  \vspace{1em}
-  \pause
-  \textbf{Why?}
-  \begin{itemize}
-    \item The configuration is tedious and complex.
-    \item Way too easy to break to start from scratch.
+    \item New maintenance team (boo!)
   \end{itemize}
 }
 
@@ -163,15 +144,32 @@
   But... we need lots of \alert{patches}.
 }
 
-\frame{\frametitle{A Working Model}
+\frame{\frametitle{A Working Model: A Starter Build}
+  \textbf{If you really want to build this...}
+  \begin{enumerate}
+  	\item Clone the starter build, then modify to suit.
+	\item Building the configuration from scratch is tedious.
+  \end{enumerate}
+  \vspace{1em}
+  \pause
+  \textbf{Starter Kit: \textcolor{blue}{\href{https://github.com/mpgeek/Geocluster-Demo}{https://github.com/mpgeek/Geocluster-Demo}}}
+  \begin{itemize}
+    \item Kit built with Grunt Drupal Tasks (\alert{automation})
+    \item Minimal core/contrib build including required patches
+    \item Includes exported demo content to demonstrate correct config
+    \item Does \alert{not} include all patches for the client build. 
+  \end{itemize}
+}
+
+\frame{\frametitle{A Working Model: The Client Build}
   The client build has been released as GPL2.0
   \begin{itemize}
-    \item \href{https://github.com/mpgeek/Vista-Map}{https://github.com/mpgeek/Vista\-Map}
+    \item \textcolor{blue}{\href{https://github.com/mpgeek/Vista-Map}{https://github.com/mpgeek/Vista\-Map}}
   \end{itemize}
   \vspace{1em}
-  Patch mania! How about a \textcolor{p2orange}{makefile}?
+  Patch mania!
   \begin{itemize}
-    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.make}{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.make}
+    \item See the \alert{makefile}
   \end{itemize}
 }
 
@@ -202,7 +200,7 @@
 \frame{\frametitle{Geocluster \& Geohash}
   \textbf{In a nutshell:}
   \begin{itemize}
-    \item Geocluster adds a hierarchical, spatial index to geofields based on the Geohash algorithm.
+    \item Geocluster adds a hierarchical, spatial index to geofields based on the \textcolor{blue}{\href{https://en.wikipedia.org/wiki/Geohash}{Geohash algorithm}}.
     \item Each geofield has columns for varying levels of precision (geohash index) created/updated on \textcolor{gray}{\texttt{entity\_save}}.
     \item A query for points/clusters specifies a geohash index and asks for clusters based on that index.
   \end{itemize}
@@ -215,7 +213,40 @@
   \end{itemize}
 }
 
-\section{Customization Towards an Application}
+\section{Case Study: The Application}
+
+\frame{\frametitle{How Do We Build with the Stack?}
+  \textbf{The starter kit} lays the technical foundation for large-scale mapping. But ...
+  \begin{itemize}
+  	\item Anything useful will need custom \alert{application} and \alert{behavior} logic to achieve a \textcolor{p2orange}{real goal}.
+  \end{itemize}
+  \pause
+  \vspace{1em}
+  \textbf{What you'll need:}
+  \begin{itemize}
+    \item The starter kit
+    \item A feature module for configuration.
+    \item Custom PHP code in a module (application logic).
+    \item Custom JS code (behavior logic).
+    \item PHP and JS \alert{debuggers} (PHPStorm gives you both in one)
+    \item UI polish
+  \end{itemize}  
+}
+
+\frame{\frametitle{Mass Geocoding}
+  \textbf{Working with public geocoding services and large datasets}
+  \vspace{1em}
+  \begin{itemize}
+    \item Typical limit is 2.5k points per day, i.e. Google 
+    \item Migration of data was a \alert{one-shot import}
+    \item How do we geocode iteratively?
+  \end{itemize}
+  \pause
+  \vspace{1em}
+  \begin{itemize}
+    \item With \href{https://www.drupal.org/node/2077317}{\texttt{\textcolor{blue}{drush geocode-backfill}}}
+  \end{itemize}
+}
 
 \frame{\frametitle{Near-point Clusters vs. Exact-point Clusters}
   \textbf{Monolithic Clusters}
@@ -226,7 +257,7 @@
     \item We needed to create two cluster types, on for each condition.
     \vspace{1.5em}
     \pause
-    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L115}{\texttt{\textcolor{gray}{vista\_map.module}}, lines 115-155}
+    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L115}{\texttt{\textcolor{blue}{vista\_map.module}}, lines 115-155} \\ \alert{Views GeoJSON field rendering is altered}
   \end{itemize}
 }
 
@@ -239,7 +270,7 @@
     \item We needed to load them on demand and allow them to be cached.
     \vspace{1em}
     \pause
-    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.js\#L123}{\texttt{\textcolor{gray}{vista\_map.js}}, lines 324-404}
+    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.js\#L141}{\texttt{\textcolor{blue}{vista\_map.js}}, lines 141-167, 324-404} \\ \alert{a View is executed with AJAX and themed statically}
   \end{itemize}
 }
 
@@ -252,7 +283,7 @@
     \item We wanted to zoom in on the currently logged-in user.
     \vspace{1em}
     \pause
-    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L290}{\texttt{\textcolor{gray}{vista\_map.module}}, lines 290-351}
+    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L290}{\texttt{\textcolor{blue}{vista\_map.module}}, lines 290-351} \\ \alert{A Leaflet map pane's zoom and bounds is dynamically altered}
   \end{itemize}
 }
 
@@ -265,7 +296,7 @@
     \item Removing more-specific information and passing abbreviated info only to geocoder.
     \vspace{1em}
     \pause
-    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L12}{\texttt{\textcolor{gray}{vista\_map.module}}, lines 12-72}
+    \item \href{https://github.com/mpgeek/Vista-Map/blob/master/vista\_map.module\#L12}{\texttt{\textcolor{blue}{vista\_map.module}}, lines 12-72} \\ \alert{Precision info was removed from geocoded data}
   \end{itemize}
 }
 
@@ -278,7 +309,7 @@
     \item Views necessitated that different source geofields be separate data layers.
     \vspace{1em}
     \pause
-    \item Contiributed the 2.x branch of Leaflet GeoJSON for panels support with multiple data layers (\href{https://www.drupal.org/node/2225815}{https://www.drupal.org/node/2225815})
+    \item Contributed the 2.x branch of Leaflet GeoJSON for \href{https://www.drupal.org/node/2225815}{\textcolor{blue}{panels support with multiple data layers}}
   \end{itemize}
 }
 
@@ -314,10 +345,9 @@
 \frame{\frametitle{Possible Improvements}
   \textbf{Geocluster}
   \begin{itemize}
-    \item Progressively enhance with client side clustering below a certain point threshold. \href{https://www.drupal.org/node/1914704}{https://www.drupal.org/node/1914704}
-    \pause
-    \vspace{0.5em}
-    
+    \item Progressively enhance with client side clustering below a certain point threshold. \\
+    \vspace{1em}
+    \href{https://www.drupal.org/node/1914704}{\textcolor{blue}{https://www.drupal.org/node/1914704}}
   \end{itemize}
 }
 
@@ -332,7 +362,7 @@
     \begin{itemize}
       \item The \texttt{\textcolor{gray}{bbox}} arguments are floating-point numbers that depend on viewport size and zoom. \alert{Takes a long time for caches to warm up for non-mobile viewports}.
       \vspace{0.5em}
-      \item \href{https://www.drupal.org/node/1868982}{https://www.drupal.org/node/1868982}
+      \item \href{https://www.drupal.org/node/1868982}{\textcolor{blue}{https://www.drupal.org/node/1868982}}
     \end{itemize}
   \end{itemize}
 }
@@ -356,23 +386,59 @@
   \end{itemize}
 }
 
+\frame{\frametitle{What about Drupal 8?}
+  \textbf{A ways off...}
+  \begin{itemize}
+  \item \textbf{Address Field:} no release (in development) \\
+    \href{https://www.drupal.org/node/2136263}{\textcolor{blue}{https://www.drupal.org/node/2136263}}
+  \item \textbf{Geocoder:} dev release \\
+    \href{https://www.drupal.org/node/2141353}{\textcolor{blue}{https://www.drupal.org/node/2141353}}
+  \item \textbf{Geofield:} alpha release
+    \href{https://www.drupal.org/node/2365135}{\textcolor{blue}{https://www.drupal.org/node/2365135}}
+  \item \textbf{Geocluster:} \alert{nothing planned}
+  \item \textbf{Views:} in core
+  \item \textbf{Views GeoJSON}: \alert{sandbox only}
+    \href{https://www.drupal.org/sandbox/kostajh/2478765}{\textcolor{blue}{https://www.drupal.org/sandbox/kostajh/2478765}}
+  \item \textbf{Leaflet GeoJSON:} \alert{nothing planned}
+  \item \textbf{Leaflet Library:} dev release
+    \href{https://www.drupal.org/node/2070343}{\textcolor{blue}{https://www.drupal.org/node/2070343}}
+  \end{itemize}
+}
+
+\frame{\frametitle{What about Drupal 8?}
+  \textbf{The biggest obstacle:} \alert{How do we add geohash columns to geofields in Drupal 8?}
+  \vspace{1em}
+  \begin{itemize}
+    \item Would it still be with \textcolor{gray}{\texttt{hook\_field\_schema\_alter}}
+    \item Is there a better architecture than altering the schema using D8 to store geohash data for a location?
+    \item Do \alert{you} have any ideas?
+  \end{itemize}
+}
+
 \frame{\frametitle{References \& Resources}
   \textbf{Things we saw and more resources:}
   \begin{itemize}
-  	\item Map application in production: \href{http://www.vistacampus.gov/map}{http://www.vistacampus.gov/map}
-	\vspace{1em}
-	\item Map application Drupal feature: \href{https://github.com/mpgeek/Vista-Map}{https://github.com/mpgeek/Vista-Map}
-    \vspace{1em}
-    \item Geohash Algorithm:\\ \href{http://en.wikipedia.org/wiki/Geohash}{http://en.wikipedia.org/wiki/Geohash}
-    \vspace{1em}
-    \item Geocluster Master's Thesis (by @dasjo): \href{http://dasjo.at/thesis}{http://dasjo.at/thesis}
+  	\item Map starter kit: \\
+	  \href{https://github.com/mpgeek/Geocluster-Demo}{\textcolor{blue}{https://github.com/mpgeek/Geocluster-Demo}}
+	\vspace{0.75em}
+	\item Map application in production: \\ 
+	  \href{http://www.vistacampus.gov/map}{\textcolor{blue}{http://www.vistacampus.gov/map}}
+	\vspace{0.75em}
+	\item Map application Drupal feature:\\
+	  \href{https://github.com/mpgeek/Vista-Map}{\textcolor{blue}{https://github.com/mpgeek/Vista-Map}}
+    \vspace{0.75em}
+    \item Geohash Algorithm:\\
+      \href{http://en.wikipedia.org/wiki/Geohash}{\textcolor{blue}{http://en.wikipedia.org/wiki/Geohash}}
+    \vspace{0.75em}
+    \item Geocluster Master's Thesis (by @dasjo):\\ 
+      \href{http://dasjo.at/thesis}{\textcolor{blue}{http://dasjo.at/thesis}}
   \end{itemize}
 }
 
 \frame{\frametitle{Questions?}
   \centerline{\includegraphics[scale=0.6]{assets/questions.jpg}}
   \vspace{1em}
-  \centerline{Find me on twitter, IRC, or drupal.org: @mpgeek}
+  \centerline{Find me on twitter, IRC, or drupal.org: \textcolor{blue}{@mpgeek}}
 }
 
 %%\input{examples.tex}
