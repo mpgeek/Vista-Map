@@ -108,7 +108,7 @@ projects[leaflet][download][branch] = "7.x-1.x"
 projects[leaflet][download][revision] = "94a9b65"
 
 projects[leaflet_geojson][download][branch] = "7.x-2.x"
-projects[leaflet_geojson][revision][revision] = "53f226f"
+projects[leaflet_geojson][download][revision] = "53f226f"
 ;; Bounding argument keys should come from their respective data layers.
 ;; @see https://drupal.org/node/2267687
 projects[leaflet_geojson][patch][] = https://drupal.org/files/issues/leaflet_geojson--bounding-argument-key--2267687-1.patch
